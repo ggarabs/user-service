@@ -22,6 +22,8 @@ public class UserEntity {
     private String name;
     private String phone;
     private String email;
+    // Sempre armazenar o resultado do PasswordEncoder, nunca a senha em texto puro.
+    private String password;
     private String birthday;
     private Double latitude;
     private Double longitude;
