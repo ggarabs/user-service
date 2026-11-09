@@ -22,6 +22,8 @@ public class UserEntity {
     private String name;
     private String phone;
     private String email;
+    // Armazena somente a senha codificada pelo PasswordEncoder.
+    private String password;
     private String birthday;
     private Double latitude;
     private Double longitude;
