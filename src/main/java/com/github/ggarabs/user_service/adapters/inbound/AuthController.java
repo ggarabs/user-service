@@ -2,6 +2,7 @@ package com.github.ggarabs.user_service.adapters.inbound;
 
 import com.github.ggarabs.user_service.adapters.inbound.dto.LoginRequest;
 import com.github.ggarabs.user_service.adapters.inbound.dto.LoginResponse;
+import com.github.ggarabs.user_service.adapters.outbound.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -26,11 +27,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
     private final SecurityContextRepository securityContextRepository =
             new HttpSessionSecurityContextRepository();
 
-    public AuthController(AuthenticationManager authenticationManager) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
     }
 
     // GET /api/auth/csrf antes do POST de login; retorna token e tambem define cookie XSRF-TOKEN.
@@ -69,7 +72,18 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        return new LoginResponse(authentication.getName(), "Autenticado com sucesso");
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
+                .map(user -> new LoginResponse(user.getId(), user.getEmail(),
+                        user.getRole() == null ? "CANDIDATE" : user.getRole().name(), "Autenticado com sucesso"))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado"));
+    }
+
+    @GetMapping("/me")
+    public LoginResponse currentUser(Authentication authentication) {
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
+                .map(user -> new LoginResponse(user.getId(), user.getEmail(),
+                        user.getRole() == null ? "CANDIDATE" : user.getRole().name(), "Sessão ativa"))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado"));
     }
 
     @PostMapping("/logout")

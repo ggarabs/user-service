@@ -23,7 +23,8 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
         return User.withUsername(user.getEmail())
                 .password(user.getPassword())
-                .roles("USER")
+                .roles((user.getRole() == null ?
+                        com.github.ggarabs.user_service.adapters.outbound.UserRole.CANDIDATE : user.getRole()).name())
                 .build();
     }
 }
