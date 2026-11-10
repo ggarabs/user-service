@@ -60,6 +60,10 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
         }
 
+        // Rotaciona o ID da sessão após autenticar para reduzir risco de session fixation.
+        httpRequest.getSession(true);
+        httpRequest.changeSessionId();
+
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
