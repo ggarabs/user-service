@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -33,19 +33,20 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
     }
 
-    // Obtenha o token antes de enviar POSTs protegidos por CSRF.
+    // GET /api/auth/csrf antes do POST de login; retorna token e tambem define cookie XSRF-TOKEN.
     @GetMapping("/csrf")
     public CsrfToken csrf(CsrfToken token) {
         return token;
     }
 
-    // POST /api/auth/login com {"email":"...", "password":"..."}.
+    // POST /api/auth/login com JSON {"email":"...", "password":"..."}.
+    // Para CSRF, enviar o cookie XSRF-TOKEN e o mesmo valor no header X-XSRF-TOKEN.
     @PostMapping("/login")
     public LoginResponse login(
             @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        if (request == null || request.email() == null || request.email().isBlank()
+        if (request.email() == null || request.email().isBlank()
                 || request.password() == null || request.password().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e senha são obrigatórios");
         }
