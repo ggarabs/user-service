@@ -17,6 +17,8 @@ services:
   postgres:
     image: postgres:17
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:?Defina DB_NAME no .env}
       POSTGRES_USER: ${DB_USER:?Defina DB_USER no .env}
