@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .addFilterBefore(new RoleRefreshFilter(userRepository), AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/auth/csrf", "/api/auth/login").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable())
