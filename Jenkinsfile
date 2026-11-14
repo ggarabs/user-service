@@ -1,8 +1,8 @@
 pipeline {
     agent any
 
-    options {
-        disableConcurrentBuilds()
+    parameters {
+        booleanParam(name: 'DEPLOY_TO_AWS', defaultValue: false, description: 'Cria/inicia a EC2 e publica o user-service.')
     }
 
     environment {
@@ -17,19 +17,33 @@ pipeline {
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
-                ]) {
-                    sh 'aws sts get-caller-identity'
-                }
+                ]) { sh 'aws sts get-caller-identity' }
             }
         }
 
         stage('Compilar e testar') {
             steps {
-                sh '''
-                    docker run --rm --volumes-from "$HOSTNAME" -w "$WORKSPACE" \\
-                      maven:3.9-eclipse-temurin-21 \\
-                      mvn -B verify
-                '''
+                sh 'docker run --rm --volumes-from "$HOSTNAME" -w "$WORKSPACE" maven:3.9-eclipse-temurin-21 mvn -B verify'
+            }
+        }
+
+        stage('Garantir EC2') {
+            when { expression { params.DEPLOY_TO_AWS } }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
+                ]) { sh '/workspace/jenkins/scripts/ensure-ec2.sh user-service > .ec2.env' }
+            }
+        }
+
+        stage('Publicar') {
+            when { expression { params.DEPLOY_TO_AWS } }
+            steps {
+                sshagent(credentials: ['ec2-deploy-key']) {
+                    sh '. ./.ec2.env && /workspace/jenkins/scripts/deploy-compose.sh user-service "$PUBLIC_IP" "http://localhost:3000"'
+                }
             }
         }
     }
